@@ -22,7 +22,7 @@
                         const buttons = Array.from(node.querySelectorAll("button"));
                         buttons.forEach((button, idxButton) => {
                             if (button.textContent.includes("댓글등록")) {
-                                addReplyButton(button, ((idxButton+1)/2)-1);
+                                addReplyButton(button, ((idxButton + 1) / 2) - 1);
                             }
                         });
                     }
@@ -59,6 +59,12 @@
         // "답변생성" 버튼 클릭 이벤트
         replyButton.addEventListener("click", async () => {
             if (data && data.review && data.review.items && data.review.items.length > 0) {
+                const textareas = document.querySelectorAll("textarea");
+                if (textareas[indexButton]) {
+                    replyButton.disabled = true;
+                    replyButton.className = "btn btn-primary disabled";
+                    textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
+                }
                 const review = reviews[indexButton];
                 const { unick, aepcont, arrate1, arrate2, arrate3 } = review;
 
@@ -80,7 +86,7 @@
                             },
                             {
                                 role: "assistant",
-                                content: "사장님이나 대표님같은 회사 상급자에 대한 언급은 하지 마세요. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\n부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다. 불만족에 대한 친절한 답변은 다음 고객에게 긍정적인 인상을 줄 수 있습니다."
+                                content: "사장님이나 대표님같은 회사 상급자에 대한 언급과 점수에 대한 직접적인 언급은 하지 마세요. 점수가 8점이하이면 부정적인 리뷰입니다. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\n부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다. 불만족에 대한 친절한 답변은 다음 고객에게 긍정적인 인상을 줄 수 있습니다."
                             },
                             {
                                 role: "user",
@@ -94,7 +100,6 @@
                     .then(response => response.json())
                     .then(data => {
                         const reply = data.choices[0].message.content.trim();
-                        const textareas = document.querySelectorAll("textarea");
                         if (textareas[indexButton]) {
                             textareas[indexButton].value = reply;
                             textareas[indexButton].dispatchEvent(new Event("input"));
