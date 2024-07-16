@@ -12,7 +12,8 @@ Review Reply Generator는 고객 리뷰에 대한 답변을 자동으로 생성�
 - "압축해제된 확장 프로그램 로드" 버튼을 클릭하고, 다운로드한 폴더를 선택합니다.
 
 ## 사용 방법
-- 익스텐션을 설치한 후, https://ad.goodchoice.kr/review-v2 페이지로 이동합니다.
+- "리얼 리뷰" -> "미답변 리뷰"에서만 작동합니다. 
+- 익스텐션을 설치한 후, https://ad.goodchoice.kr/manage-accommodation/review/unanswered/1 페이지로 이동합니다.
 - "댓글등록" 버튼 아래에 "답변생성" 버튼이 추가된 것을 확인합니다.
 - "답변생성" 버튼을 클릭하여 OpenAI API를 통해 생성된 답변을 textarea에 자동으로 입력합니다.
 
