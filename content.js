@@ -1,0 +1,106 @@
+(async () => {
+    const result = await chrome.storage.local.get(["openaiApiKey"]);
+    const apiKey = result.openaiApiKey;
+    if (!apiKey) {
+        alert("Please set your OpenAI API key in the extension popup.");
+        return;
+    }
+
+    const config = {
+        headers: {
+            "Authorization": `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+        }
+    };
+
+    // MutationObserver를 사용하여 "댓글등록" 버튼이 나타나는 것을 감지
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.addedNodes.length) {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) {
+                        const buttons = Array.from(node.querySelectorAll("button"));
+                        buttons.forEach((button, idxButton) => {
+                            if (button.textContent.includes("댓글등록")) {
+                                addReplyButton(button, ((idxButton+1)/2)-1);
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+
+    observer.observe(document.body, {
+        childList: true,
+        subtree: true
+    });
+
+
+    // JSON 데이터 가져오기
+    const response = await fetch("https://ad.goodchoice.kr/review-v2?unreview=Y&q=&page=1&status=");
+    const data = await response.json();
+    const reviews = data.review.items;
+
+    function addReplyButton(commentButton, indexButton) {
+        // "댓글등록" 버튼의 CSS 복사
+        const commentButtonStyle = window.getComputedStyle(commentButton);
+
+        // "답변생성" 버튼 생성 및 추가
+        const replyButton = document.createElement("button");
+        replyButton.innerText = "답변생성";
+
+        // "댓글등록" 버튼의 CSS를 "답변생성" 버튼에 적용
+        replyButton.className = "btn btn-primary";
+        //replyButton.style.cssText = commentButtonStyle.cssText;
+        replyButton.style.marginLeft = "10px";
+        commentButton.insertAdjacentElement("afterend", replyButton);
+
+        // "답변생성" 버튼 클릭 이벤트
+        replyButton.addEventListener("click", async () => {
+            if (data && data.review && data.review.items && data.review.items.length > 0) {
+                const review = reviews[indexButton];
+                const { unick, aepcont, arrate1, arrate2, arrate3 } = review;
+
+                const prompt = `고객명 ${unick}, 시설에 대한 점수: ${arrate1}/10, 청결에 대한 점수: ${arrate2}/10, 친절에 대한 점수: ${arrate3}/10, [고객이 남길 글] ${aepcont} .`;
+
+                fetch("https://api.openai.com/v1/chat/completions", {
+                    method: "POST",
+                    headers: config.headers,
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        messages: [
+                            {
+                                role: "system",
+                                content: "당신은 호텔써밋의 프론트 예약관리 담당입니다. 고객님들이 리뷰에 남긴 평가글에 대한 답변을 친절하고 여성스러운 말투로 작성해야합니다."
+                            },
+                            {
+                                role: "user",
+                                content: prompt
+                            },
+                            {
+                                role: "assistant",
+                                content: "긍정적인 리뷰에는 고객의 긍정 리뷰에 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\n부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다. 고객이 잘못 인지한 부분이 있다면 설명해주고, 해결/개선 방안에 대해 안내해주세요. 불만족에 대한 친절한 답변은 다음 고객에게 긍정적인 인상을 줄 수 있습니다."
+                            },
+                            {
+                                role: "user",
+                                content: "답변을 300자 이하로 작성해주세요."
+                            }
+                        ],
+                        max_tokens: 800
+                    })
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        const reply = data.choices[0].message.content.trim();
+                        const textareas = document.querySelectorAll("textarea");
+                        if (textareas[indexButton]) {
+                            textareas[indexButton].value = reply;
+                            textareas[indexButton].dispatchEvent(new Event("input"));
+                        }
+                    })
+                    .catch(error => console.error("Error:", error));
+            }
+        });
+    }
+})();

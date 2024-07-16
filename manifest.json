@@ -1,19 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "SAT Chrome Extension",
-  "version": "0.0",
-  "description": "SAT Chrome Extension gives users tools like test center search automation, resources for studying, and SAT score reveal dramatization.",
-  "host_permissions": [
-    "https://mysat.collegeboard.org/*",
-    "https://satsuite.collegeboard.org/sat/scores",
-  ]
+  "name": "Review Reply Generator",
+  "version": "1.0",
   "permissions": [
-    "scripting",
-    "notifications",
-    "sidePanel",
-    "storage",
+    "activeTab",
+    "storage"
   ],
+  "background": {
+    "service_worker": "background.js"
+  },
   "action": {
-     "default_popup": "popup.html"
-   }
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://ad.goodchoice.kr/manage-accommodation/review/*", "https://ad.goodchoice.kr/review-v2*"],
+      "js": ["content.js"]
+    }
+  ]
 }
