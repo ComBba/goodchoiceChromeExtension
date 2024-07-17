@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Reply Generator</title>
+  <script src="popup.js"></script>
+  <style>
+    #apiInputSection {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Review Reply Generator</h1>
+  <div id="currentApiKeySection">
+    <p>현재 API 키가 설정되어 있습니다.</p>
+    <button id="changeApiKey">API 변경</button>
+  </div>
+  <div id="apiInputSection">
+    <input type="text" id="apiKey" placeholder="Enter OpenAI API Key">
+    <button id="saveKey">Save API Key</button>
+  </div>
+</body>
+</html> 
