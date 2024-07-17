@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Review Reply Generator",
+  "name": "여기어때 AI Review Reply Generator",
   "version": "1.0",
   "permissions": [
     "activeTab",
