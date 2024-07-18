@@ -68,7 +68,7 @@
                 const review = reviews[indexButton];
                 const { unick, aepcont, arrate1, arrate2, arrate3 } = review;
 
-                const prompt = `고객명 ${unick}, 시설에 대한 점수: ${arrate1}/10, 청결에 대한 점수: ${arrate2}/10, 친절에 대한 점수: ${arrate3}/10, [고객이 남길 글] ${aepcont} .`;
+                const prompt = `고객명 ${unick}, 시설에 대한 점수: ${arrate1}/10, 청결에 대한 점수: ${arrate2}/10, 친절에 대한 점수: ${arrate3}/10, [고객이 남긴 글] ${aepcont} .`;
 
                 fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
