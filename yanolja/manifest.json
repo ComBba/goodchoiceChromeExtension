@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Review Reply Generator",
+  "name": "야놀자 AI Review Reply Generator",
   "version": "1.0",
   "permissions": [
     "activeTab",
@@ -20,7 +20,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://ad.goodchoice.kr/manage-accommodation/review/*", "https://ad.goodchoice.kr/review-v2*"],
+      "matches": ["https://partner.yanolja.com/front/guest/review*"],
       "js": ["content.js"]
     }
   ]

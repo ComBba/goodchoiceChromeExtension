@@ -13,18 +13,13 @@
         }
     };
 
-    // MutationObserver를 사용하여 "댓글등록" 버튼이 나타나는 것을 감지
+    // MutationObserver를 사용하여 "답변" 버튼이 나타나는 것을 감지
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
             if (mutation.addedNodes.length) {
                 mutation.addedNodes.forEach((node) => {
                     if (node.nodeType === 1) {
-                        const buttons = Array.from(node.querySelectorAll("button"));
-                        buttons.forEach((button, idxButton) => {
-                            if (button.textContent.includes("댓글등록")) {
-                                addReplyButton(button, ((idxButton + 1) / 2) - 1);
-                            }
-                        });
+                        checkForReplyButton(node);
                     }
                 });
             }
@@ -36,40 +31,95 @@
         subtree: true
     });
 
+    // 주기적으로 DOM을 확인하여 "답변" 버튼을 감지
+    const intervalIdForReply = setInterval(() => {
+        checkForReplyButton(document.body);
+    }, 1000);
 
-    // JSON 데이터 가져오기
-    const response = await fetch("https://ad.goodchoice.kr/review-v2?unreview=Y&q=&page=1&status=");
-    const data = await response.json();
-    const reviews = data.review.items;
+    // 반복 작업을 위한 intervalId 변수 선언
+    let intervalIdForSave;
+    // 반복 작업을 정의하는 함수
+    function startInterval() {
+        intervalIdForSave = setInterval(function() {
+            checkForSaveButton(document.body);
+            // 여기에 수행할 작업을 추가
+        }, 1000); // 1초마다 작업 수행
+    }
+    // 초기 반복 작업 시작
+    startInterval();
 
-    function addReplyButton(commentButton, indexButton) {
-        // "댓글등록" 버튼의 CSS 복사
-        const commentButtonStyle = window.getComputedStyle(commentButton);
+    function checkForReplyButton(node) {
+        const buttons = Array.from(node.querySelectorAll("button"));
+        var isFirst = true;
+        buttons.forEach((button, idxButton) => {
+            if (button.textContent.trim() == "답변" && isFirst) {
+                isFirst = false;
+                clearInterval(intervalIdForReply); // "답변" 버튼을 찾으면 setInterval 중지
+                console.log(idxButton, "첫번째 답변 버튼을 찾았습니다.");
+                button.dispatchEvent(new Event("click"));
+            }
+        });
+    }
+    function checkForSaveButton(node) {
+        const buttons = Array.from(node.querySelectorAll("button"));
+        var isFirst = true;
+        buttons.forEach((button, idxButton) => {
+            if (button.textContent.trim() == "저장" && isFirst) {
+                clearInterval(intervalIdForSave); // "저장" 버튼을 찾으면 setInterval 중지
+                console.log(idxButton, "첫번째 저장 버튼을 찾았습니다.");
+                addReplyButton(button);
+                isFirst = false;
+            }
+        });
+    }
+
+    function addReplyButton(replyButton) {
+        // "답변" 버튼의 CSS 복사
+        const replyButtonStyle = window.getComputedStyle(replyButton);
 
         // "답변생성" 버튼 생성 및 추가
-        const replyButton = document.createElement("button");
-        replyButton.innerText = "답변생성";
+        const generateReplyButton = document.createElement("button");
+        const generateReplySpan = document.createElement("span");
+        generateReplySpan.class = "v-btn__content";
+        generateReplySpan.innerText = "답변생성";
 
-        // "댓글등록" 버튼의 CSS를 "답변생성" 버튼에 적용
-        replyButton.className = "btn btn-primary";
-        //replyButton.style.cssText = commentButtonStyle.cssText;
-        replyButton.style.marginLeft = "10px";
-        commentButton.insertAdjacentElement("afterend", replyButton);
+        for (var dataKey in replyButton.dataset) {
+            //console.log(dataKey + ": " + replyButton.dataset[dataKey]);
+            generateReplyButton.dataset[dataKey] = replyButton.dataset[dataKey];
+        }
+        // "답변" 버튼의 CSS를 "답변생성" 버튼에 적용
+        generateReplyButton.size = "normal";
+        generateReplyButton.className = replyButton.className;
+        generateReplyButton.style.cssText = replyButtonStyle.cssText;
+        generateReplyButton.style.marginLeft = "10px";
+        generateReplyButton.appendChild(generateReplySpan);
+        replyButton.insertAdjacentElement("afterend", generateReplyButton);
 
         // "답변생성" 버튼 클릭 이벤트
-        replyButton.addEventListener("click", async () => {
-            if (data && data.review && data.review.items && data.review.items.length > 0) {
-                const textareas = document.querySelectorAll("textarea");
-                if (textareas[indexButton]) {
-                    replyButton.disabled = true;
-                    replyButton.className = "btn btn-primary disabled";
-                    textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
-                }
-                const review = reviews[indexButton];
-                const { unick, aepcont, arrate1, arrate2, arrate3 } = review;
+        generateReplyButton.addEventListener("click", async () => {
+            const textareas = document.querySelectorAll("textarea");
+            const indexButton = 0;
+            if (textareas[indexButton]) {
+                textareas[indexButton].dispatchEvent(new Event("click"));
+                // "disabled" 클래스를 추가합니다
+                generateReplyButton.classList.add("disabled");
+                generateReplyButton.classList.add("v-btn--disabled");
+                // 버튼을 비활성화합니다
+                generateReplyButton.disabled = true;
+                textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
+                textareas[indexButton].dispatchEvent(new Event("input"));
 
-                const prompt = `고객명 ${unick}, 시설에 대한 점수: ${arrate1}/10, 청결에 대한 점수: ${arrate2}/10, 친절에 대한 점수: ${arrate3}/10, [고객이 남길 글] ${aepcont} .`;
+                // HTML에서 리뷰 데이터 추출
+                const reviewContainer = replyButton.closest(".ReviewListItem");
+                console.log("reviewContainer: ", reviewContainer);
+                const unick = reviewContainer.querySelector('td:nth-child(1) > span').textContent.trim();
+                console.log("unick: ", unick);
+                const arrate1 = reviewContainer.querySelector('td:nth-child(2) > div > div:nth-child(2) > span').textContent.trim();
+                console.log("arrate1: ", arrate1);
+                const aepcont = reviewContainer.querySelector('td:nth-child(3) > div > div.col.col-9 > div.body-3.BoardContent__content.col').textContent;
+                console.log("aepcont: ", aepcont);
 
+                const prompt = `고객명 ${unick}, 평점: ${arrate1}/5, [고객이 남긴 글] ${aepcont} .`;
                 fetch("https://api.openai.com/v1/chat/completions", {
                     method: "POST",
                     headers: config.headers,
@@ -78,7 +128,7 @@
                         messages: [
                             {
                                 role: "system",
-                                content: "당신은 호텔써밋의 프론트 예약관리 담당입니다. 고객님이 리뷰에 남긴 평가글에 대한 답변을 친절하고 여성스러운 말투로 작성해야합니다. 답변은 긍정적인 리뷰와 부정적인 리뷰에 따라 다르게 작성해야합니다. "
+                                content: "당신은 호텔써밋의 프론트 예약관리 담당입니다."
                             },
                             {
                                 role: "user",
@@ -86,7 +136,7 @@
                             },
                             {
                                 role: "assistant",
-                                content: "사장님이나 대표님같은 회사 상급자에 대한 언급과 점수에 대한 직접적인 언급은 하지 마세요. 일회용품에 대한 불편사항을 고객이 언급하면 6층 프론트 앞에 있는 자판기를 이용할 것을 추천하세요. 주차공간에 대한 불만사항은 답변에 개선한다는 내용을 언급하지 마세요. 점수가 8점이하이면 부정적인 리뷰입니다. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\n부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다. 불만족에 대한 친절한 답변은 다음 고객에게 긍정적인 인상을 줄 수 있습니다."
+                                content: "사장님이나 대표님같은 회사 상급자에 대한 언급과 점수에 대한 직접적인 언급은 하지 마세요. 일회용품에 대한 불편사항을 고객이 언급하면 6층 프론트 앞에 있는 자판기를 이용할 것을 추천하세요. 주차공간에 대한 불만사항은 답변에 개선한다는 내용을 언급하지 마세요. 점수가 8점이하이면 부정적인 리뷰입니다. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\n고객님이 리뷰에 남긴 평가글에 대한 답변을 친절하고 여성스러운 말투로 작성해야합니다. 답변은 긍정적인 리뷰와 부정적인 리뷰에 따라 다르게 작성해야합니다."
                             },
                             {
                                 role: "user",
