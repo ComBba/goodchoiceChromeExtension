@@ -13,6 +13,8 @@
         }
     };
 
+    let replyButtonFound = false; // "답변" 버튼이 발견되었는지 여부를 추적
+
     // MutationObserver를 사용하여 "답변" 버튼이 나타나는 것을 감지
     const observer = new MutationObserver((mutations) => {
         mutations.forEach((mutation) => {
@@ -42,24 +44,27 @@
     function startInterval() {
         intervalIdForSave = setInterval(function() {
             checkForSaveButton(document.body);
-            // 여기에 수행할 작업을 추가
         }, 1000); // 1초마다 작업 수행
     }
     // 초기 반복 작업 시작
     startInterval();
 
     function checkForReplyButton(node) {
+        if (replyButtonFound) return; // 이미 "답변" 버튼이 발견되었으면 함수 종료
+
         const buttons = Array.from(node.querySelectorAll("button"));
         var isFirst = true;
         buttons.forEach((button, idxButton) => {
             if (button.textContent.trim() == "답변" && isFirst) {
                 isFirst = false;
+                replyButtonFound = true; // "답변" 버튼이 발견되었음을 기록
                 clearInterval(intervalIdForReply); // "답변" 버튼을 찾으면 setInterval 중지
                 console.log(idxButton, "첫번째 답변 버튼을 찾았습니다.");
                 button.dispatchEvent(new Event("click"));
             }
         });
     }
+
     function checkForSaveButton(node) {
         const buttons = Array.from(node.querySelectorAll("button"));
         var isFirst = true;
