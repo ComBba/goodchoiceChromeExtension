@@ -34,24 +34,39 @@
     });
 
     // 주기적으로 DOM을 확인하여 "답변" 버튼을 감지
-    const intervalIdForReply = setInterval(() => {
-        checkForReplyButton(document.body);
-    }, 1000);
+    let intervalIdForReply;
+    function startIntervalForReply() {
+        console.log("[startIntervalForReply]")
+        intervalIdForReply = setInterval(function () {
+            checkForReplyButton(document.body);
+        }, 1000); // 1초마다 작업 수행
+    }
+    startIntervalForReply();
 
     // 반복 작업을 위한 intervalId 변수 선언
     let intervalIdForSave;
     // 반복 작업을 정의하는 함수
-    function startInterval() {
-        intervalIdForSave = setInterval(function() {
+    function startIntervalForSave() {
+        console.log("[startIntervalForSave]");
+        intervalIdForSave = setInterval(function () {
             checkForSaveButton(document.body);
         }, 1000); // 1초마다 작업 수행
     }
     // 초기 반복 작업 시작
-    startInterval();
+    startIntervalForSave();
+
+    let intervalIdForSaveMessage;
+    function startIntervalForSavedOKMessage() {
+        console.log("[startIntervalForSavedOKMessage]");
+        intervalIdForSaveMessage = setInterval(function () {
+            checkForSavedOKMessage(document.body);
+        }, 1000);
+    }
+    startIntervalForSavedOKMessage()
 
     function checkForReplyButton(node) {
+        console.log("[checkForReplyButton] replyButtonFound:", replyButtonFound);
         if (replyButtonFound) return; // 이미 "답변" 버튼이 발견되었으면 함수 종료
-
         const buttons = Array.from(node.querySelectorAll("button"));
         var isFirst = true;
         buttons.forEach((button, idxButton) => {
@@ -66,6 +81,7 @@
     }
 
     function checkForSaveButton(node) {
+        console.log("[checkForSaveButton] isFirst:", isFirst);
         const buttons = Array.from(node.querySelectorAll("button"));
         var isFirst = true;
         buttons.forEach((button, idxButton) => {
@@ -76,6 +92,23 @@
                 isFirst = false;
             }
         });
+    }
+
+    //<span class="v-btn__content">   확인   </span>
+    //#app > div.v-dialog__content.v-dialog__content--active > div > div > div.v-card__actions.ya-pa-24 > button > span
+    //#app > div.v-dialog__content.v-dialog__content--active > div > div > div.v-card__text.BaseDialog__contents.ya-pa-24 > div > div > span
+    function checkForSavedOKMessage(node) {
+        const messageDialog = node.querySelector("div.v-dialog.v-dialog--active.v-dialog--persistent.v-dialog--scrollable");
+        if (!messageDialog) return;
+        const spans = Array.from(messageDialog.querySelectorAll("span"));
+        if (spans[0].textContent.trim() == "저장되었습니다.") {
+            messageDialog.querySelector("button").dispatchEvent(new Event("click"));
+            console.log("저장되었습니다. 메시지를 확인했습니다.");
+            clearInterval(intervalIdForSaveMessage); // "저장되었습니다." setInterval 중지
+            replyButtonFound = false;
+            startIntervalForReply();
+            startIntervalForSave();
+        }
     }
 
     function addReplyButton(replyButton) {
@@ -116,7 +149,7 @@
 
                 // HTML에서 리뷰 데이터 추출
                 const reviewContainer = replyButton.closest(".ReviewListItem");
-                console.log("reviewContainer: ", reviewContainer);
+                //console.log("reviewContainer: ", reviewContainer);
                 const unick = reviewContainer.querySelector('td:nth-child(1) > span').textContent.trim();
                 console.log("unick: ", unick);
                 const arrate1 = reviewContainer.querySelector('td:nth-child(2) > div > div:nth-child(2) > span').textContent.trim();
@@ -158,6 +191,7 @@
                         if (textareas[indexButton]) {
                             textareas[indexButton].value = reply;
                             textareas[indexButton].dispatchEvent(new Event("input"));
+                            startIntervalForSavedOKMessage();
                         }
                     })
                     .catch(error => console.error("Error:", error));
