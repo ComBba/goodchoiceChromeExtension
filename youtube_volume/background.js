@@ -1,6 +1,6 @@
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.set({ volumeSchedule: {} });
-  chrome.alarms.create('adjustVolume', { periodInMinutes: 60 }); // Create the alarm here
+  chrome.alarms.create('adjustVolume', { periodInMinutes: 1 }); // Create the alarm to check every minute
 });
 
 chrome.alarms.onAlarm.addListener(alarm => {
@@ -20,7 +20,7 @@ function adjustVolume() {
   const currentHour = new Date().getHours();
   chrome.storage.sync.get('volumeSchedule', data => {
     const schedule = data.volumeSchedule || {};
-    const volume = schedule[currentHour] || 100; // Default volume is 100%
+    const volume = schedule[currentHour] !== undefined ? schedule[currentHour] : 100; // Default volume is 100%
     chrome.tabs.query({ url: "*://*.youtube.com/*" }, tabs => {
       tabs.forEach(tab => {
         chrome.scripting.executeScript({
@@ -40,6 +40,8 @@ function setVolume(volume) {
     const volumeSlider = document.querySelector('.ytp-volume-slider-handle');
     if (volumeSlider) {
       volumeSlider.style.left = `${volume}%`;
+      // Trigger a UI update by simulating a mouse event on the volume slider
+      volumeSlider.dispatchEvent(new MouseEvent('mouseup', {bubbles: true}));
     }
   }
 }

@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   chrome.storage.sync.get('volumeSchedule', data => {
     const schedule = data.volumeSchedule || {};
     for (let hour = 0; hour < 24; hour++) {
-      const volume = schedule[hour] || 100;
+      const volume = schedule[hour] !== undefined ? schedule[hour] : 100;
       const hourDiv = document.createElement('div');
       hourDiv.classList.add('hour');
       hourDiv.innerHTML = `
