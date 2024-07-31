@@ -4,11 +4,11 @@
   "version": "1.0",
   "description": "Automatically adjust YouTube volume based on the time of day.",
   "permissions": [
-    "tabs",
     "storage",
-    "activeTab",
+    "alarms",
     "scripting",
-    "alarms"
+    "tabs",
+    "activeTab"
   ],
   "background": {
     "service_worker": "background.js"
