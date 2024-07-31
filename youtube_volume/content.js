@@ -5,5 +5,9 @@ chrome.storage.sync.get('volumeSchedule', data => {
     const video = document.querySelector('video');
     if (video) {
       video.volume = volume / 100;
+      const volumeSlider = document.querySelector('.ytp-volume-slider-handle');
+      if (volumeSlider) {
+        volumeSlider.style.left = `${volume}%`;
+      }
     }
   });
