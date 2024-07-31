@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>YouTube Volume Scheduler</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      min-width: 400px; /* Ensure a comfortable width */
+    }
+    .hour { 
+      margin-bottom: 10px; 
+    }
+    .bulk-change {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>YouTube Volume Scheduler</h1>
+  <div id="schedule"></div>
+  <button id="save">Save Schedule</button>
+  <div class="bulk-change">
+    <input type="number" id="bulk-volume" min="0" max="100" placeholder="Set all volumes">
+    <button id="bulk-change">Set All</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
