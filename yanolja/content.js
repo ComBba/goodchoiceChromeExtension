@@ -68,29 +68,74 @@
     startIntervalForSavedOKMessage()
 
     function checkForReplyButton(node) {
-        console.log("[checkForReplyButton] Searching...");
+        console.log("[checkForReplyButton] replyButtonFound:", replyButtonFound);
         if (replyButtonFound) return;
+        
+        const buttons = Array.from(node.querySelectorAll("button.MuiButton-containedPrimary"));
+        var isFirst = true;
+        
+        buttons.forEach((button, idxButton) => {
+            console.log(button.textContent.trim());
+            if (button.textContent.trim() == "답변" && isFirst) {
+                isFirst = false;
+                replyButtonFound = true;
+                clearInterval(intervalIdForReply);
+                console.log(idxButton, "첫번째 답변 버튼을 찾았습니다.");
+                
+                // 여러 가지 이벤트 트리거 방식 시도
+                try {
+                    // 방법 1: 마우스 이벤트 시뮬레이션
+                    /*
+                    button.dispatchEvent(new MouseEvent('mousedown', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    }));
+                    button.dispatchEvent(new MouseEvent('mouseup', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    }));
+                    button.dispatchEvent(new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    }));
+                    */
 
-        // 새로운 답변 버튼 selector
-        const replyButton = node.querySelector('button.MuiButton-containedPrimary[type="button"]');
-        if (replyButton && replyButton.textContent.trim() === "답변") {
-            console.log("답변 버튼을 찾았습니다.");
-            replyButtonFound = true;
-            clearInterval(intervalIdForReply);
-            replyButton.dispatchEvent(new Event("click"));
-        }
+                    // 방법 2: 직접 클릭
+                    button.click();
+                    
+                    // 방법 3: 프로그래매틱 클릭
+                    /*
+                    const clickEvent = new Event('click', {
+                        bubbles: true,
+                        cancelable: true,
+                    });
+                    button.dispatchEvent(clickEvent);
+                    */
+                    
+                    console.log("클릭 이벤트 발생 시도 완료");
+                } catch (error) {
+                    console.error("버튼 클릭 시도 중 에러:", error);
+                }
+            }
+        });
     }
 
     function checkForSaveButton(node) {
-        console.log("[checkForSaveButton]");
-        const buttons = Array.from(node.querySelectorAll('button.MuiButton-containedPrimary'));
-        const saveButton = buttons.find(button => button.textContent.trim() === "저장");
+        console.log("[checkForSaveButton] isFirst:", isFirst);
+        const buttons = Array.from(node.querySelectorAll("button.MuiButton-containedPrimary"));
+        var isFirst = true;
         
-        if (saveButton) {
-            clearInterval(intervalIdForSave);
-            console.log("저장 버튼을 찾았습니다.");
-            addReplyButton(saveButton);
-        }
+        buttons.forEach((button, idxButton) => {
+            if (button.textContent.trim() == "저장" && isFirst) {
+                clearInterval(intervalIdForSave); // "저장" 버튼을 찾으면 setInterval 중지
+                console.log(idxButton, "첫번째 저장 버튼을 찾았습니다.");
+                addReplyButton(button);
+                isFirst = false;
+            }
+        });
     }
 
     //<span class="v-btn__content">   확인   </span>
@@ -138,12 +183,21 @@
                 const textareas = document.querySelectorAll("textarea");
                 const indexButton = 0;
                 if (textareas[indexButton]) {
-                    textareas[indexButton].dispatchEvent(new Event("click"));
+                    //textareas[indexButton].dispatchEvent(new Event("click"));
+                    generateReplyButton.disabled = true;
+                    generateReplyButton.style.backgroundColor = "#ccc";
+                    generateReplyButton.style.color = "#666";
+                    generateReplyButton.style.cursor = "not-allowed";
+                    generateReplyButton.style.pointerEvents = "none";
+
                     generateReplyButton.classList.add("disabled");
                     generateReplyButton.classList.add("v-btn--disabled");
-                    generateReplyButton.disabled = true;
+
+                    textareas[indexButton].click();
+                    textareas[indexButton].focus();
                     textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
                     textareas[indexButton].dispatchEvent(new Event("input"));
+                    //textareas[indexButton].dispatchEvent(new Event("change"));
 
                     // 새로운 selector로 리뷰 데이터 추출
                     const reviewContainer = document.querySelector('.MuiStack-root.css-t3dfpt');
@@ -207,6 +261,14 @@
                                 textareas[indexButton].value = reply;
                                 textareas[indexButton].dispatchEvent(new Event("input"));
                                 startIntervalForSavedOKMessage();
+                                generateReplyButton.disabled = false;
+                                generateReplyButton.style.backgroundColor = replyButton.style.backgroundColor;
+                                generateReplyButton.style.color = replyButton.style.color;
+                                generateReplyButton.style.cursor = "pointer";
+                                generateReplyButton.style.pointerEvents = "auto";
+                                generateReplyButton.classList.remove("disabled");
+                                generateReplyButton.classList.remove("v-btn--disabled");
+
                             }
                         })
                         .catch(error => {
