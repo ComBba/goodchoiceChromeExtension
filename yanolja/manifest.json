@@ -20,7 +20,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://partner.yanolja.com/front/guest/review*"],
+      "matches": ["https://partner.yanolja.com/review*"],
       "js": ["content.js"]
     }
   ]

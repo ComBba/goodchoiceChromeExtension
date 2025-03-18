@@ -1,5 +1,7 @@
 (async () => {
+    console.log("[Extension Started]");
     const result = await chrome.storage.local.get(["openaiApiKey"]);
+    console.log("API Key exists:", !!result.openaiApiKey);
     const apiKey = result.openaiApiKey;
     if (!apiKey) {
         alert("Please set your OpenAI API key in the extension popup.");
@@ -17,6 +19,7 @@
 
     // MutationObserver를 사용하여 "답변" 버튼이 나타나는 것을 감지
     const observer = new MutationObserver((mutations) => {
+        console.log("[MutationObserver] Mutations detected:", mutations.length);
         mutations.forEach((mutation) => {
             if (mutation.addedNodes.length) {
                 mutation.addedNodes.forEach((node) => {
@@ -65,33 +68,29 @@
     startIntervalForSavedOKMessage()
 
     function checkForReplyButton(node) {
-        console.log("[checkForReplyButton] replyButtonFound:", replyButtonFound);
-        if (replyButtonFound) return; // 이미 "답변" 버튼이 발견되었으면 함수 종료
-        const buttons = Array.from(node.querySelectorAll("button"));
-        var isFirst = true;
-        buttons.forEach((button, idxButton) => {
-            if (button.textContent.trim() == "답변" && isFirst) {
-                isFirst = false;
-                replyButtonFound = true; // "답변" 버튼이 발견되었음을 기록
-                clearInterval(intervalIdForReply); // "답변" 버튼을 찾으면 setInterval 중지
-                console.log(idxButton, "첫번째 답변 버튼을 찾았습니다.");
-                button.dispatchEvent(new Event("click"));
-            }
-        });
+        console.log("[checkForReplyButton] Searching...");
+        if (replyButtonFound) return;
+
+        // 새로운 답변 버튼 selector
+        const replyButton = node.querySelector('button.MuiButton-containedPrimary[type="button"]');
+        if (replyButton && replyButton.textContent.trim() === "답변") {
+            console.log("답변 버튼을 찾았습니다.");
+            replyButtonFound = true;
+            clearInterval(intervalIdForReply);
+            replyButton.dispatchEvent(new Event("click"));
+        }
     }
 
     function checkForSaveButton(node) {
-        console.log("[checkForSaveButton] isFirst:", isFirst);
-        const buttons = Array.from(node.querySelectorAll("button"));
-        var isFirst = true;
-        buttons.forEach((button, idxButton) => {
-            if (button.textContent.trim() == "저장" && isFirst) {
-                clearInterval(intervalIdForSave); // "저장" 버튼을 찾으면 setInterval 중지
-                console.log(idxButton, "첫번째 저장 버튼을 찾았습니다.");
-                addReplyButton(button);
-                isFirst = false;
-            }
-        });
+        console.log("[checkForSaveButton]");
+        const buttons = Array.from(node.querySelectorAll('button.MuiButton-containedPrimary'));
+        const saveButton = buttons.find(button => button.textContent.trim() === "저장");
+        
+        if (saveButton) {
+            clearInterval(intervalIdForSave);
+            console.log("저장 버튼을 찾았습니다.");
+            addReplyButton(saveButton);
+        }
     }
 
     //<span class="v-btn__content">   확인   </span>
@@ -135,75 +134,89 @@
 
         // "답변생성" 버튼 클릭 이벤트
         generateReplyButton.addEventListener("click", async () => {
-            const textareas = document.querySelectorAll("textarea");
-            const indexButton = 0;
-            if (textareas[indexButton]) {
-                textareas[indexButton].dispatchEvent(new Event("click"));
-                // "disabled" 클래스를 추가합니다
-                generateReplyButton.classList.add("disabled");
-                generateReplyButton.classList.add("v-btn--disabled");
-                // 버튼을 비활성화합니다
-                generateReplyButton.disabled = true;
-                textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
-                textareas[indexButton].dispatchEvent(new Event("input"));
+            try {
+                const textareas = document.querySelectorAll("textarea");
+                const indexButton = 0;
+                if (textareas[indexButton]) {
+                    textareas[indexButton].dispatchEvent(new Event("click"));
+                    generateReplyButton.classList.add("disabled");
+                    generateReplyButton.classList.add("v-btn--disabled");
+                    generateReplyButton.disabled = true;
+                    textareas[indexButton].value = "ChatGPT를 사용하여 답변을 생성합니다. 잠시만 기다려주세요...";
+                    textareas[indexButton].dispatchEvent(new Event("input"));
 
-                // HTML에서 리뷰 데이터 추출
-                const reviewContainer = replyButton.closest(".ReviewListItem");
-                //console.log("reviewContainer: ", reviewContainer);
-                const unick = reviewContainer.querySelector('td:nth-child(1) > span').textContent.trim();
-                console.log("unick: ", unick);
-                const arrate1 = reviewContainer.querySelector('td:nth-child(2) > div > div:nth-child(2) > span').textContent.trim();
-                console.log("arrate1: ", arrate1);
-                const aepcont = reviewContainer.querySelector('td:nth-child(3) > div > div.col.col-9 > div.body-3.BoardContent__content.col').textContent;
-                console.log("aepcont: ", aepcont);
+                    // 새로운 selector로 리뷰 데이터 추출
+                    const reviewContainer = document.querySelector('.MuiStack-root.css-t3dfpt');
+                    if (!reviewContainer) {
+                        console.error("리뷰 컨테이너를 찾을 수 없습니다.");
+                        return;
+                    }
 
-                const prompt = `고객명 ${unick}, 평점: ${arrate1}/5, [고객이 남긴 글] ${aepcont} .`;
-                fetch("https://api.openai.com/v1/chat/completions", {
-                    method: "POST",
-                    headers: config.headers,
-                    body: JSON.stringify({
-                        model: "gpt-4o-mini",
-                        messages: [
-                            {
-                                role: "system",
-                                content: "당신은 호텔써밋의 프론트 예약관리 담당자입니다. 고객님이 리뷰에 남긴 평가글에 대한 답변을 친절하고 여성스러운 말투로 작성해야합니다."
-                            },
-                            {
-                                role: "user",
-                                content: prompt
-                            },
-                            {
-                                role: "assistant",
-                                content: "\
-                                다음 사항을 준수하여 작성하세요. \
-                                1. 점수가 3점이하이면 부정적인 리뷰입니다. \
-                                2. 사장님이나 대표님같은 회사 상급자에 대한 언급과 점수에 대한 직접적인 언급은 하지 마세요. \
-                                3. 일회용품에 대한 불편사항을 고객이 언급하면 6층 프론트 앞에 있는 자판기를 이용할 것을 추천하세요. \
-                                4. 주차공간에 대한 불만사항은 답변에 개선한다는 내용을 언급하지 마세요. \
-                                5. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\
-                                6. 고객의 부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다.\
-                                7. 답변은 긍정적인 리뷰와 부정적인 리뷰에 따라 다르게 작성해야합니다. \
-                                "
-                            },
-                            {
-                                role: "user",
-                                content: "답변을 300자 이하로 작성해주세요."
+                    // 리뷰 데이터 추출
+                    const unick = reviewContainer.querySelector('.MuiTypography-14-bold').textContent.trim();
+                    const aepcont = reviewContainer.querySelector('.MuiTypography-12-regular').textContent.trim();
+                    const reviewDate = reviewContainer.querySelector('.MuiTypography-10-light').textContent.trim();
+
+                    console.log("추출된 데이터:", {
+                        unick,
+                        aepcont,
+                        reviewDate
+                    });
+
+                    const prompt = `고객명 ${unick}, [고객이 남긴 글] ${aepcont} .`;
+                    fetch("https://api.openai.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: config.headers,
+                        body: JSON.stringify({
+                            model: "gpt-4o-mini",
+                            messages: [
+                                {
+                                    role: "system",
+                                    content: "당신은 호텔써밋의 프론트 예약관리 담당자입니다. 고객님이 리뷰에 남긴 평가글에 대한 답변을 친절하고 여성스러운 말투로 작성해야합니다."
+                                },
+                                {
+                                    role: "user",
+                                    content: prompt
+                                },
+                                {
+                                    role: "assistant",
+                                    content: "\
+                                    다음 사항을 준수하여 작성하세요. \
+                                    1. 점수가 3점이하이면 부정적인 리뷰입니다. \
+                                    2. 사장님이나 대표님같은 회사 상급자에 대한 언급과 점수에 대한 직접적인 언급은 하지 마세요. \
+                                    3. 일회용품에 대한 불편사항을 고객이 언급하면 6층 프론트 앞에 있는 자판기를 이용할 것을 추천하세요. \
+                                    4. 주차공간에 대한 불만사항은 답변에 개선한다는 내용을 언급하지 마세요. \
+                                    5. 고객의 긍정 리뷰에는 웃는 얼굴로 감사 인사를 한다면 더욱 많은 고객들에게 숙소에 대한 좋은 이미지를 심어줄 수 있습니다.\
+                                    6. 고객의 부정적인 리뷰에는 고객마다 숙소 이용 경험에 대해 평가하는 기준이 모두 다릅니다.\
+                                    7. 답변은 긍정적인 리뷰와 부정적인 리뷰에 따라 다르게 작성해야합니다. \
+                                    "
+                                },
+                                {
+                                    role: "user",
+                                    content: "답변을 300자 이하로 작성해주세요."
+                                }
+                            ],
+                            temperature: 0.8,
+                            max_tokens: 800
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            const reply = data.choices[0].message.content.trim();
+                            if (textareas[indexButton]) {
+                                textareas[indexButton].value = reply;
+                                textareas[indexButton].dispatchEvent(new Event("input"));
+                                startIntervalForSavedOKMessage();
                             }
-                        ],
-                        temperature: 0.8,
-                        max_tokens: 800
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        const reply = data.choices[0].message.content.trim();
-                        if (textareas[indexButton]) {
-                            textareas[indexButton].value = reply;
-                            textareas[indexButton].dispatchEvent(new Event("input"));
-                            startIntervalForSavedOKMessage();
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
+                        })
+                        .catch(error => {
+                            console.error("답변 생성 중 에러 발생:", error);
+                            console.error("에러 상세:", error.stack);
+                        });
+                }
+            } catch (error) {
+                console.error("답변 생성 중 에러 발생:", error);
+                console.error("에러 상세:", error.stack);
             }
         });
     }
